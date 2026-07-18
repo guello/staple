@@ -1,0 +1,126 @@
+{
+  "name": "vscode-tools",
+  "displayName": "VS Code Tools",
+  "version": "0.1.0",
+  "description": "Essential utilities for VS Code",
+  "categories": ["Other"],
+  "license": "MIT",
+  "publisher": "gabrielecanepa",
+  "repository": "https://github.com/gabrielecanepa/vscode-tools",
+  "icon": "icon.png",
+  "main": "./extension.js",
+  "packageManager": "pnpm@11.15.0",
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=extension.js --external:vscode --format=cjs --platform=node --target=node20 --minify",
+    "check": "tsc --noEmit",
+    "deploy": "pnpm run package && code --install-extension vscode-tools-$npm_package_version.vsix",
+    "package": "pnpm run check && vsce package --no-dependencies",
+    "vscode:prepublish": "pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.0"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscodeTools.toggleQuotes",
+        "title": "Toggle Quotes",
+        "category": "VS Code Tools"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "vscodeTools.toggleQuotes",
+        "key": "ctrl+'",
+        "mac": "cmd+'",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "VS Code Tools",
+      "properties": {
+        "vscodeTools.gitInstantRefresh.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Refresh the built-in Git view immediately when a repository changes outside VS Code."
+        },
+        "vscodeTools.gitInstantRefresh.delay": {
+          "type": "number",
+          "default": 200,
+          "minimum": 0,
+          "maximum": 5000,
+          "scope": "resource",
+          "description": "Debounce delay in milliseconds between a detected .git change and the forced refresh."
+        },
+        "vscodeTools.toggleQuotes.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "language-overridable",
+          "description": "Enable the Toggle Quotes command."
+        },
+        "vscodeTools.toggleQuotes.chars": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            ]
+          },
+          "default": ["\"", "'"],
+          "scope": "language-overridable",
+          "description": "Quote characters to cycle through. Each entry is a single character or a [begin, end] pair."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[javascript]": {
+        "vscodeTools.toggleQuotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[javascriptreact]": {
+        "vscodeTools.toggleQuotes.chars": ["\"", "'", "`"]
+      },
+      "[typescript]": {
+        "vscodeTools.toggleQuotes.chars": ["\"", "'", "`"]
+      },
+      "[typescriptreact]": {
+        "vscodeTools.toggleQuotes.chars": ["\"", "'", "`"]
+      },
+      "[vue]": {
+        "vscodeTools.toggleQuotes.chars": ["\"", "'", "`"]
+      },
+      "[markdown]": {
+        "vscodeTools.toggleQuotes.chars": ["\"", "'", "`"]
+      }
+    }
+  },
+  "activationEvents": ["onStartupFinished"],
+  "extensionDependencies": ["vscode.git"],
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  }
+}
