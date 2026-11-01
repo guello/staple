@@ -1,5 +1,5 @@
 {
-  "name": "staple-vscode",
+  "name": "staple",
   "displayName": "Staple",
   "version": "0.1.0",
   "description": "Essential VS Code utilities packaged as a single lightweight, performant extension",
@@ -23,7 +23,7 @@
     "check:types": "tsc --noEmit",
     "test": "node scripts/test.mts",
     "deploy": "pnpm run package && code --install-extension staple-vscode-$npm_package_version.vsix",
-    "package": "pnpm -w run ci && vsce package --no-dependencies --baseContentUrl https://github.com/guello/staple/blob/HEAD/apps/vscode --baseImagesUrl https://github.com/guello/staple/raw/HEAD/apps/vscode",
+    "package": "pnpm -w run ci && vsce package --no-dependencies --out staple-vscode-$npm_package_version.vsix --baseContentUrl https://github.com/guello/staple/blob/HEAD/apps/vscode --baseImagesUrl https://github.com/guello/staple/raw/HEAD/apps/vscode",
     "vscode:prepublish": "pnpm run build"
   },
   "dependencies": {
