@@ -198,14 +198,17 @@ Pick an app that optimizes files in place and takes file paths passed to it, the
 
 ## Development
 
+The extension lives in `apps/vscode` of the Staple repository. Install from the repository root, then deploy from the app directory:
+
 ```sh
 pnpm install
+cd apps/vscode
 pnpm run deploy
 ```
 
-`pnpm run deploy` checks the project, bundles the extension into `dist/`, packages the vsix, and installs it into VS Code. Reload the VS Code window after installing. `pnpm run check` runs TypeScript, Oxlint, Oxfmt's check mode, and Knip in parallel. Use `pnpm run fix` to apply safe lint fixes and format the repository. Run `pnpm run build` or `pnpm run package` when you only need those steps.
+`pnpm run deploy` checks the repository, bundles the extension into `dist/`, packages the vsix, and installs it into VS Code. Reload the VS Code window after installing. At the root, `pnpm run check` runs TypeScript, Oxlint, Oxfmt's check mode, and Knip in parallel, and `pnpm run fix` applies safe lint fixes and formats the repository. Run `pnpm run build` or `pnpm run package` in `apps/vscode` when you only need those steps.
 
-Every long-running command lives in `scripts/` and runs through Node's TypeScript support, so `package.json` only holds the entry points. `scripts/build.mts` bundles the extension with esbuild and, in parallel, writes `dist/features/markdown/markdown.css` and `themes.css` by pulling the current GitHub stylesheets with [generate-github-markdown-css](https://github.com/sindresorhus/generate-github-markdown-css). That second step needs network access on a cold cache, since the package scrapes github.com and calls the public Markdown API; results are cached under `node_modules/.cache` for a day. The hand-written preview stylesheets live in `media/markdown/`.
+Every long-running command lives in `scripts/` and runs through Node's TypeScript support, so `package.json` only holds the entry points. `scripts/build.mts` bundles the extension with esbuild through the shared `@staple/tools` package and, in parallel, writes `dist/features/markdown/markdown.css` and `themes.css` by pulling the current GitHub stylesheets with [generate-github-markdown-css](https://github.com/sindresorhus/generate-github-markdown-css). That second step needs network access on a cold cache, since the package scrapes github.com and calls the public Markdown API; results are cached under `node_modules/.cache` for a day. The hand-written preview stylesheets live in `media/markdown/`.
 
 The generated GitHub styles are wrapped in `@container style(--markdown-theme: github)`, and `themes.css` sets that property on the preview wrapper only when the theme resolving for the current color mode is a GitHub one. That is what lets a `default` theme fall back to VS Code's own preview without shipping a second copy of the stylesheet, and it is why light and dark are resolved in CSS rather than in the extension: inside a webview `prefers-color-scheme` follows the operating system, not the editor theme, so `system` mode cannot be resolved from the extension host. Generation also rewrites `rem` to `px`, since `rem` would otherwise resolve against VS Code's 14px root instead of GitHub's 16px.
 

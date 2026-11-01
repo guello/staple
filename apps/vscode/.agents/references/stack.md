@@ -1,45 +1,44 @@
-# Stack decisions
+# VS Code stack decisions
 
-Why the toolchain looks the way it does, and what would justify changing it. Read this before proposing a different bundler, test runner or type package, and before raising a major version. Verified against the installed tree in August 2026.
+Why the VS Code toolchain looks the way it does, and what can justify a change.
 
-## Contents
-
-- [Locked stack](#locked-stack): what is in use and why
-- [Version constraints](#version-constraints): the couplings a bump has to respect
-- [Editor baseline](#editor-baseline): what the extension targets
-- [Not adopted](#not-adopted): what was considered and left out
+Read this before you propose a different bundler, test runner or type package, and before you raise a major version.
 
 ## Locked stack
 
-- **Build**: esbuild driven by `scripts/build.mts`, run by Node's native TypeScript support. Three entry points, `outbase: src`, minified, `vscode` external. There is no bundler config file and no plugin ecosystem in play beyond the one local `taplo-wasm` plugin.
-- **Output format**: CJS. The extension host loads `main` as CommonJS, and the `taplo-wasm` plugin rewrites the wasm loader to `require('node:fs')` and `__dirname`, both of which only exist there. The source is ESM throughout and only the bundle is CJS.
-- **Language**: TypeScript with `strict`, ES2022 target, `bundler` module resolution and `noEmit`, because esbuild does the emitting. `allowImportingTsExtensions` is on so `scripts/*.mts` can import each other by full filename, which is what Node's type stripping requires.
-- **Tests**: `node:test` and `node:assert/strict`, bundled by `scripts/test.mts` with `vscode` stubbed as an empty object. The stub is deliberately useless: it means anything importing the editor API cannot be unit tested, which forces testable logic into pure modules.
-- **Gates**: oxfmt, oxlint with type-aware rules through `oxlint-tsgolint`, knip, and `tsc --noEmit`, all four in parallel. No ESLint, no Prettier, no separate test framework.
-- **Runtime dependencies**: `@taplo/lsp` and `vscode-languageclient`, both reachable only through the TOML feature and both loaded lazily. Everything else is a devDependency.
+- Build: esbuild through `bundle()` from `@staple/tools`, called by `scripts/build.mts` on the native TypeScript support of Node.
+- The build has three entry points, `outbase: src`, minification and `vscode` as external. Its only plugin is the local `taplo-wasm` plugin.
+- Output: CJS, because the extension host loads `main` as CommonJS. The source is ESM.
+- The `taplo-wasm` plugin rewrites the wasm loader to `require('node:fs')` and `__dirname`, which exist only in CJS.
+- Language: TypeScript with `strict`, an ES2022 target, `bundler` resolution and `noEmit`, because esbuild emits the code.
+- `allowImportingTsExtensions` is on, so that `scripts/*.mts` files import each other by full file name, as Node type stripping requires.
+
+## Tests and gates
+
+- Tests: `node:test` and `node:assert/strict`, through `test()` from `@staple/tools` with `modules: ['vscode']`.
+- The test stub resolves `vscode` to an empty object, so testable logic must go in pure modules.
+- Gates: the gates in the root `.agents/references/stack.md`. No ESLint, no Prettier and no other test framework.
+- Runtime dependencies: `@taplo/lsp` and `vscode-languageclient`. Only the TOML feature uses them, and it loads them lazily.
 
 ## Version constraints
 
-Four couplings break quietly if a bump ignores them.
+These four couplings break with no error when a bump ignores them:
 
-- `@types/vscode` must be less than or equal to `engines.vscode`. It is pinned with `~` rather than `^` because a caret would let `pnpm update --latest` drift the types years past the declared floor, and the code would then compile against APIs that are missing in the oldest editor the extension claims to support. `vsce` does not catch every case.
-- `vscode-languageclient` sets the floor. Version 10 declares `engines.vscode: ^1.91.0`, which is why the extension declares `1.91` rather than something older. Raising the client raises the floor, and both `engines.vscode` and `@types/vscode` move together.
-- `esbuild` `target` tracks the Node runtime the oldest supported VS Code embeds. It is `node20` today. It moves only when `engines.vscode` moves.
-- `@types/node` majors change strictness on the Node API surface without any Node upgrade. Version 26 made `process.disconnect` optional, which is correct, since it exists only on a process that has an IPC channel, and `src/features/toml/server.ts` calls it through `?.()` for that reason.
-
-pnpm enforces a minimum release age, so `pnpm update --latest` deliberately stops one version short of a package published in the last day. That gap is the policy working, not a stale cache. Never force the newer version with an explicit `pnpm add <pkg>@<version>`: pnpm records a permanent `minimumReleaseAgeExclude` entry in `pnpm-workspace.yaml` for it and every one of its platform packages, which commits a supply-chain exemption to the repository. Wait for the window to pass instead.
-
-TypeScript 7 is in use and the gates pass on it. If `tsc --noEmit` or the type-aware oxlint rules misbehave on a future 7.x, pin `^5.9` and record why here rather than disabling the rule.
+- `@types/vscode` must not be higher than `engines.vscode`. A caret lets `pnpm update --latest` raise the types past the floor, so it is pinned with `~`.
+- With newer types, the code compiles against APIs that the oldest supported editor does not have, and `vsce` does not catch every case.
+- `vscode-languageclient` 10 declares `engines.vscode: ^1.91.0`, which sets the floor. A newer client raises it, and `@types/vscode` moves with it.
+- The esbuild `target` follows the Node version that the oldest supported VS Code embeds, now `node20`. It moves only with `engines.vscode`.
+- A new `@types/node` major can change strictness without a Node upgrade. Version 26 made `process.disconnect` optional, so `server.ts` calls it through `?.()`.
 
 ## Editor baseline
 
-`engines.vscode` is `^1.91.0`, set by `vscode-languageclient` 10 and nothing else. No API in the source requires it. Raise it only alongside a dependency or an API that forces it, and check the `@since` on the API before assuming it does.
-
-The extension is not web-compatible and does not declare a browser entry point. `optimize-images.ts` shells out through `node:child_process`, `toml/client.ts` spawns a Node process, and the Taplo wasm module is read from disk. Adding a web build means carving all three out, not adding a field.
+- Only `vscode-languageclient` 10 sets `engines.vscode` to `^1.91.0`. No API in the source needs it.
+- Raise the floor only for a dependency or an API that needs it, and check the `@since` of that API first.
+- The extension is not web-compatible and declares no browser entry point.
+- A web build must first remove three Node uses: `node:child_process` in `optimize-images.ts`, the Node process of `toml/client.ts`, and the Taplo wasm read.
 
 ## Not adopted
 
-- **A bundler framework.** No webpack, no rollup, no tsup, no `@vscode/test-cli`. The two build scripts are around 40 lines each and port almost verbatim to and from staple-chrome, which is the point: both repositories share one build shape.
-- **An integration test runner.** `@vscode/test-electron` or `@vscode/test-cli` would let tests drive a real editor, which is the one gap the current gates leave. It has not been added because nothing is written against it yet; add the dependency when the first test exists, not before.
-- **`@types/markdown-it`.** `src/features/markdown/markdown-it.ts` declares the structural subset the plugin actually touches. A real type package would pull a transitive tree for four interfaces.
-- **A CI workflow.** There is no `.github/workflows/`. The git hooks are the only gate, which means a push from a clone that never ran `pnpm install` is ungated. Adding one is the obvious next hardening step and would run `pnpm run ci` on push and pull request.
+- A bundler framework: no webpack, rollup, tsup or `@vscode/test-cli`. Both apps share `bundle()` and `test()`, so they keep one build shape.
+- An integration test runner: `@vscode/test-electron` lets tests drive a real editor. Add it with the first test that needs a real editor, not before.
+- `@types/markdown-it`: `src/features/markdown/markdown-it.ts` declares the four interfaces that the plugin uses. The package adds a transitive tree.

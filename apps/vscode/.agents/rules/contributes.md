@@ -1,58 +1,59 @@
 ---
-description: 'Use when editing package.json: the contribution points that must agree with the source and with each other, which of those links nothing checks, the settings scope policy, and the packaging fields.'
-applyTo: 'package.json'
+description: 'Use when editing package.json: the contributions that must agree with the source, the settings scope policy, and packaging.'
 paths:
   - 'package.json'
 ---
 
 # Manifest and contributions
 
-`package.json` is both the npm manifest and the VS Code extension manifest. Its `contributes` block is the extension's entire declarative surface, and almost nothing in it is verified against the source: `tsc` never reads it, oxlint never reads it, and knip only checks the dependency lists. A typo here fails at runtime in a user's editor, so every link below is checked by hand or not at all.
+`package.json` is the npm manifest and the VS Code extension manifest. Its `contributes` block is the whole declarative surface of the extension.
 
-`oxfmt` runs with `sortPackageJson: false`, so key order is deliberate and hand-maintained. Do not reorder, and do not let another tool rewrite the file.
+- No gate reads `contributes`: `tsc` and oxlint skip it, and knip checks only the dependency lists. A typo fails at runtime in the editor of a user.
+- Keep the key order. oxfmt runs with `sortPackageJson: false`, and no other tool may rewrite the file.
 
 ## What has to agree
 
-| Declaration                             | Must match                                                                     | Checked by |
-| --------------------------------------- | ------------------------------------------------------------------------------ | ---------- |
-| `contributes.commands[].command`        | the id passed to `registerCommand` or `registerTextEditorCommand`              | nobody     |
-| `contributes.configuration.properties`  | the section and key each feature reads, and the default the code falls back to | nobody     |
-| `when` and `enablement` clauses         | the setting keys they name through `config.`                                   | nobody     |
-| `contributes.markdown.previewStyles`    | files under `dist/features/markdown/` and `media/markdown/`, in load order     | nobody     |
-| `contributes.languages[].configuration` | files under `languages/`                                                       | nobody     |
-| `contributes.grammars[].path`           | files under `languages/`                                                       | nobody     |
-| `main`                                  | the esbuild output path in `scripts/build.mts`                                 | nobody     |
-| every shipped path above                | an allow line in `.vscodeignore`                                               | nobody     |
+No tool checks any row of this table:
 
-`.vscodeignore` excludes `**` and then allows back. A new shipped directory that is not allowed there is missing from the vsix while everything still builds and tests green. Confirm with `pnpm package` and read the file list it prints.
+| Declaration                             | Must match                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------ |
+| `contributes.commands[].command`        | the id passed to `registerCommand` or `registerTextEditorCommand`              |
+| `contributes.configuration.properties`  | the section and key each feature reads, and the default the code falls back to |
+| `when` and `enablement` clauses         | the setting keys they name through `config.`                                   |
+| `contributes.markdown.previewStyles`    | files under `dist/features/markdown/` and `media/markdown/`, in load order     |
+| `contributes.languages[].configuration` | files under `languages/`                                                       |
+| `contributes.grammars[].path`           | files under `languages/`                                                       |
+| `main`                                  | the esbuild output path in `scripts/build.mts`                                 |
+| every shipped path above                | an allow line in `.vscodeignore`                                               |
 
-A setting default declared here and a different default in the `get(key, fallback)` call is a real bug: the declared one drives the settings UI, the code one drives behavior when the key is absent, and users see two answers. Where the code reads with no inline fallback (`mode`, `lightTheme`, `darkTheme`, `chars`, `checkboxes`), a validator downstream supplies it, so the declared default has to match that validator instead.
+- `.vscodeignore` excludes `**`, then allows paths back. A new shipped directory without an allow line is missing from the vsix, and all gates stay green.
+- After you add a shipped path, run `pnpm --filter staple run package` and read the file list that it prints.
+- Keep each declared default equal to the fallback of its `get(key, fallback)` call. One drives the settings UI, and the other drives behavior.
+- When the code reads with no fallback (`mode`, `lightTheme`, `darkTheme`, `chars`, `checkboxes`), match the default to the validator that supplies it.
 
 ## Settings scope
 
-Scope is a security boundary, not a formality. A workspace can set anything scoped `resource` or `window`, which means an untrusted folder can set it.
+Scope is a security boundary. A workspace, an untrusted folder included, can set any `resource` or `window` setting.
 
-| Scope                  | Used for                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `machine`              | `optimizeImages.app` only. A workspace pointing it at an executable would be remote code execution on folder open. |
-| `application`          | `ghosttySyntax.*`, because the feature writes to global `files.associations`.                                      |
-| `language-overridable` | `toggleQuotes.*`, so a language can carry its own quote cycle.                                                     |
-| `window`               | `markdown.*`, which the preview webview reads once per window.                                                     |
-| `resource`             | everything else.                                                                                                   |
+| Scope                  | Used for                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `machine`              | `optimizeImages.app` only. A workspace value that names an executable runs code on folder open. |
+| `application`          | `ghosttySyntax.*`, because the feature writes to the global `files.associations`.               |
+| `language-overridable` | `toggleQuotes.*`, so that a language can have its own quote cycle.                              |
+| `window`               | `markdown.*`, which the preview webview reads one time for each window.                         |
+| `resource`             | all other settings.                                                                             |
 
-Never widen `machine` or `application` to reach a per-project value without saying in the commit what a hostile workspace could then do.
+- Never widen `machine` or `application` scope without a commit message that tells what a hostile workspace can then do.
 
 ## Menus, palette and keybindings
 
-`staple.optimizeFolderImages` is registered with `"when": "false"` under `commandPalette`. That is the documented way to keep a context-menu-only command out of the palette, where it would have no folder argument. Any new command that needs an argument from its invocation site gets the same treatment.
-
-Menu `when` clauses do the visibility work and the command handler still validates its argument, because a keybinding or another extension can invoke a command that no menu is showing.
-
-`contributes.keybindings` carries both `key` and `mac`. Adding one without checking the VS Code default keybindings list is how a shortcut silently loses to a built-in.
+- Hide a command that needs an argument from its invocation site with `"when": "false"` under `commandPalette`, as `staple.optimizeFolderImages` does.
+- Use menu `when` clauses for visibility, and also validate the argument in the handler. A keybinding or another extension can call any command.
+- Give each entry in `contributes.keybindings` both `key` and `mac`. Check the VS Code default keybindings first, because a built-in wins a conflict.
 
 ## Packaging fields
 
-- `engines.vscode` is the compatibility floor and `@types/vscode` must never exceed it. `vscode-languageclient` 10 is what currently sets the floor at `1.91`.
-- `extensionDependencies` lists `vscode.git`, which is what makes the Git API available to `instant-git-refresh.ts`.
-- `vscode:prepublish` runs `pnpm build`, so `vsce` always packages a fresh `dist/`. `pnpm package` gates on `pnpm run ci` before that.
-- `version` is not tagged automatically. See `.agents/references/release.md`.
+- `engines.vscode` is the compatibility floor, and `@types/vscode` must never be higher. `vscode-languageclient` 10 sets the floor at `1.91`.
+- `extensionDependencies` lists `vscode.git`, which gives `instant-git-refresh.ts` the Git API.
+- `vscode:prepublish` runs `pnpm run build`, so `vsce` always packages a fresh `dist/`. The `package` script runs the root `pnpm run ci` first.
+- Nothing tags `version` automatically. See the root `.agents/references/release.md`.

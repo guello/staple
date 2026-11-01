@@ -1,6 +1,5 @@
 ---
-description: 'Use when editing the markdown preview: src/features/markdown, media/markdown or the generator script. Which stylesheets are generated, why theme resolution happens in CSS rather than TypeScript, and the markdown-it contract VS Code imposes.'
-applyTo: 'src/features/markdown/**, media/markdown/**, scripts/generate-github-markdown.mts'
+description: 'Use when editing the markdown preview or its generator: the generated stylesheets, CSS theme selection, markdown-it.'
 paths:
   - 'src/features/markdown/**'
   - 'media/markdown/**'
@@ -9,35 +8,48 @@ paths:
 
 # Markdown preview
 
-The preview spans three places that have to agree: the markdown-it plugin in `src/features/markdown/`, the generated stylesheets under `dist/features/markdown/`, and the hand-written ones in `media/markdown/`. `contributes.markdown.previewStyles` in `package.json` lists all five in load order, generated first.
+The preview has three parts that must agree:
 
-`dist/features/markdown/markdown.css` and `themes.css` are written by `scripts/generate-github-markdown.mts` on every build and carry a do-not-edit header. Edit the generator, never the output. Hand-written rules go in `media/markdown/`.
+- The markdown-it plugin in `src/features/markdown/`.
+- The generated stylesheets in `dist/features/markdown/`.
+- The hand-written stylesheets in `media/markdown/`.
 
-Generation calls `generate-github-markdown-css`, which scrapes github.com and the public Markdown API, so a cold cache needs network. Results are cached under `node_modules/.cache` for a day. A build that fails here on a plane is the cache expiring, not a code change.
+`contributes.markdown.previewStyles` in `package.json` lists all five stylesheets in load order, the generated ones first.
 
-## Why the themes resolve in CSS
+## Generated stylesheets
 
-Inside a webview, `prefers-color-scheme` follows the operating system rather than the editor theme, so the extension host cannot know what `system` mode should resolve to. The generator therefore emits every combination as a selector instead of letting TypeScript pick one:
+- `scripts/generate-github-markdown.mts` writes `dist/features/markdown/markdown.css` and `themes.css` on each build, with a do-not-edit header.
+- Never edit the generated output. Change the generator, or put hand-written rules in `media/markdown/`.
+- The generator calls `generate-github-markdown-css`, which reads github.com and the public Markdown API. A cold cache needs the network.
+- The result stays in `node_modules/.cache` for one day. When a build fails here offline, the cache expired, not the code.
+- The generator changes each `rem` to `px` at 16px. The VS Code preview root is 14px, so `rem` values make the GitHub stylesheet smaller.
+- The generator drops rules with `:is()` in the selector. The upstream package emits them empty, and no browser matches them.
+- `splitVariables()` and `withoutDeadRules()` throw when the upstream stylesheet changes shape. Fix the generator, not a downstream override.
 
-- `mode: light` and `mode: dark` pin a theme outright.
-- `mode: auto` keys off the `.vscode-light`, `.vscode-dark` and `.vscode-high-contrast` classes VS Code puts on the preview body. The dark selector excludes `.vscode-high-contrast-light`, which also carries `.vscode-high-contrast`.
-- `mode: system` keys off `@media (prefers-color-scheme: ...)`.
+## Theme selection in CSS
 
-`markdown.css` is wrapped in `@container style(--markdown-theme: github)` and `themes.css` sets that property to `github` or `default` on the wrapper. That is what lets the `default` theme fall through to VS Code's own preview styling without shipping a second stylesheet. Anything added to `markdown.css` inherits the gate; anything that must apply under `default` too belongs in `media/markdown/`.
+In a webview, `prefers-color-scheme` follows the OS, not the editor theme. So the generator emits one selector for each mode:
 
-The generator rewrites every `rem` to `px` at 16px. VS Code's preview root is 14px, so leaving `rem` in scales the whole GitHub stylesheet down. It also drops rules whose selector contains `:is()`, which the upstream package emits empty and which no browser matches.
-
-`splitVariables()` and `withoutDeadRules()` throw when the upstream stylesheet shape changes. That failure is the signal that `generate-github-markdown-css` moved, and the fix is in the generator, not a downstream override.
+- `mode: light` and `mode: dark` set a theme directly.
+- `mode: auto` uses the `.vscode-light`, `.vscode-dark` and `.vscode-high-contrast` classes on the preview body.
+- The `auto` dark selector excludes `.vscode-high-contrast-light`, which also has `.vscode-high-contrast`.
+- `mode: system` uses `@media (prefers-color-scheme: ...)`.
+- `markdown.css` is inside `@container style(--markdown-theme: github)`. `themes.css` sets that property to `github` or `default` on the wrapper.
+- The `default` theme then falls through to the VS Code preview styles without a second stylesheet.
+- A rule added to `markdown.css` applies only to the GitHub theme. Put a rule that must also apply under `default` in `media/markdown/`.
 
 ## The markdown-it contract
 
-VS Code owns the markdown-it instance and hands it to `extendMarkdownIt` once per preview engine, so nothing can be re-registered later. `src/features/markdown/markdown-it.ts` declares the structural subset actually used; there is no `@types/markdown-it` dependency and adding one to reach a wider API is a dependency to justify, not a convenience.
+- VS Code owns the markdown-it instance and gives it to `extendMarkdownIt` one time for each preview engine. Nothing can register again later.
+- `src/features/markdown/markdown-it.ts` declares the subset of types in use. Adding `@types/markdown-it` is a dependency that needs a reason.
+- The task-list rule and the render wrapper read settings in a closure on each render, so a change applies on the next `markdown.preview.refresh`.
 
-Both the task-list rule and the render wrapper therefore read configuration through a closure evaluated per render, not captured at registration. That is what makes a settings change take effect on the refresh that `onDidChangeConfiguration` triggers through `markdown.preview.refresh`.
+## Task lists
 
-- The core ruler rule matches only `list_item_open`, `paragraph_open`, `inline` in sequence with a leading `[x]` text token, and requires the character after the marker to be whitespace or end of content. Loosening either check turns `[note]` prose into a checkbox.
-- `resolveStates()` accepts single characters mapped to a known state and drops everything else, so a malformed user setting degrades to fewer checkboxes rather than throwing inside the renderer.
-- The checkbox is emitted as `html_inline` tokens wrapping the label in `.task-list-item-label`, with `data-task-state` on both the input and the list item. `media/markdown/task-lists.css` styles from those attributes, so changing an attribute name means changing both files.
-- The input is always `disabled`. The preview is not an editor and a clickable box would not write back.
-
-Another installed extension that renders task lists parses `[ ]` first and its markup wins. The stylesheet still applies to it, which is why the styling keys off GitHub's class names as well as ours.
+- The core rule matches only `list_item_open`, `paragraph_open`, `inline` in sequence, with a leading `[x]` text token.
+- The character after the marker must be whitespace or the end of content. A looser check turns `[note]` prose into a checkbox.
+- `resolveStates()` keeps single characters that map to a known state and drops all others. A bad user setting gives fewer checkboxes, not a renderer error.
+- The checkbox is `html_inline` tokens around the label in `.task-list-item-label`, with `data-task-state` on the input and the list item.
+- `media/markdown/task-lists.css` styles from those attributes. When you change an attribute name, change both files.
+- The input is always `disabled`. The preview is not an editor, and a click does not write back.
+- When another extension renders task lists, it parses `[ ]` first and its markup wins. The stylesheet also uses the GitHub class names, so it still applies.

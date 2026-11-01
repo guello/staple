@@ -1,15 +1,69 @@
 # Staple
 
-Staple is a set of small developer tools in one repository. Each tool ships on its own, with its own version, changelog, tag and release artifact.
+Staple is a set of small developer extensions in one pnpm workspace. Each extension ships on its own, with its own version, changelog, tag and release artifact.
 
 ## Layout
 
-- `apps/<name>/` holds one shipped tool, with its own `package.json`, `AGENTS.md` and `README.md`.
-- `packages/<name>/` holds shared code. Add a package only when a second app needs the code.
+| Path             | Package         | What it is                                                                |
+| ---------------- | --------------- | ------------------------------------------------------------------------- |
+| `apps/chrome`    | `staple-chrome` | Manifest V3 Chrome extension with tab utilities.                          |
+| `apps/vscode`    | `staple`        | VS Code extension with editor utilities.                                  |
+| `packages/tools` | `@staple/tools` | `bundle()` and `test()`, the build and test helpers that both apps share. |
+
+Each app has its own `AGENTS.md`. Read it before you work in that app.
+
+## Commands
+
+Node comes from `.node-version` through nodenv, and pnpm from `packageManager` through Corepack. Run these at the root:
+
+| Command        | What it runs                                                                 |
+| -------------- | ---------------------------------------------------------------------------- |
+| `pnpm install` | Installs every package and points Git at `.githooks/` through `prepare`.     |
+| `pnpm check`   | oxfmt check, knip, oxlint and `tsc --noEmit` for every package, in parallel. |
+| `pnpm test`    | The `test` script of every package.                                          |
+| `pnpm run ci`  | `pnpm check`, then `pnpm test`.                                              |
+| `pnpm build`   | The `build` script of every package.                                         |
+| `pnpm fix`     | Lint fixes plus formatting. Use it instead of hand fixes.                    |
+
+Run an app script with `pnpm --filter <package> run <script>` or `pnpm run <script>` in the app directory.
+
+The hooks run `pnpm run check` before a commit, commitlint on the message, and `pnpm run ci` before a push.
+
+CI runs the same gates on each push to `main` and on each pull request. All jobs are in `.agents/references/stack.md`.
+
+## Workspace rules
+
+- Gate configs exist only at the root. Put an app difference in an override in `.oxlintrc.json` or `.oxfmtrc.json`, or in the app workspace of `knip.json`.
+- Gate tools go in the root `devDependencies`. Platform types stay in each package.
+- Build tools that more than one package uses go in the strict catalog of `pnpm-workspace.yaml`.
+- A package depends on another package with `workspace:*`.
+- Shared code moves to `packages/` only when a second app needs it. Repository tasks go in the root `scripts/`.
+- oxfmt, oxlint, knip and tsc own formatting and style. Do not restate their rules in a review.
+
+## Adding an app
+
+1. Create `apps/<name>/` with a private `package.json` that has `build`, `test` and `check:types` scripts.
+2. Extend the root `tsconfig.json` from its own `tsconfig.json`, and set `include` there.
+3. Add its workspace to `knip.json`, and an override to `.oxlintrc.json` for its environment.
+4. Add `<name>` to `scope-enum` in `.commitlintrc.json`.
+5. Add its `AGENTS.md`, a `CLAUDE.md` that holds `@AGENTS.md`, and a row in the layout table above.
+6. Put its rules in `apps/<name>/.agents/rules/`, with globs relative to the app, and link `apps/<name>/.claude/rules` to `../.agents/rules`.
 
 ## Conventions
 
-- Commits follow Conventional Commits: `type(scope): description`.
-- For a change inside one app, the scope is the name of the app directory, for example `feat(chrome): add tab search`.
-- Commits are signed.
+- Commits follow Conventional Commits, enforced by commitlint: `type(scope): description`.
+- The scope is the app directory (`chrome`, `vscode`), or `ci`, `deps`, `release` or `tools`. A change to root files can omit the scope.
+- commitlint limits body lines to 100 characters.
+- Commits and tags are signed.
 - Prefer platform APIs and small hand-written scripts to frameworks. A new dependency needs a reason that the platform cannot cover.
+
+## Read next
+
+Each app keeps its rules and references in `apps/<app>/.agents/`. Claude Code loads each rule on its path glob through the `apps/<app>/.claude/rules` link. Other agents read the rules from the app `AGENTS.md` files.
+
+| File                            | When                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| `apps/chrome/AGENTS.md`         | Any work in `apps/chrome`.                                               |
+| `apps/vscode/AGENTS.md`         | Any work in `apps/vscode`.                                               |
+| `.agents/references/stack.md`   | Changing the workspace, the gates, the dependencies or `packages/tools`. |
+| `.agents/references/release.md` | Packaging, tagging and publishing an app.                                |

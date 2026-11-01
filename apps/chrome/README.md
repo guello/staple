@@ -27,7 +27,7 @@ The list is rebuilt from tab and window events and lives in `chrome.storage.sess
 | `tabSwitch.enabled` | `true`   | Enable the feature.                                                           |
 | `tabSwitch.scope`   | `window` | `window` keeps one history per window, `global` keeps one across all of them. |
 
-Repeated presses do not yet walk further back than two tabs, and there is no searchable tab list. Both are planned.
+Repeated presses walk back at most two tabs, and there is no searchable tab list.
 
 ### Tab Shift
 
@@ -57,18 +57,20 @@ Chrome allows an extension to suggest at most four default shortcuts, so `tab-sw
 
 ## Install
 
-The extension is not on the Chrome Web Store yet. Building from source needs Node 24 and pnpm, both pinned in the repository through `.node-version` and the `packageManager` field, so `corepack enable` gets you the right pnpm:
+Building from source needs Node 26 and pnpm 12, both pinned at the repository root through `.node-version` and the `packageManager` field, so `corepack enable` gets you the right pnpm. From the repository root:
 
 ```sh
 pnpm install
-pnpm build
+pnpm --filter staple-chrome run build
 ```
 
-Then open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and select the `dist` folder. After a rebuild, press the reload button on the extension card.
+Then open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and select the `apps/chrome/dist` folder. After a rebuild, press the reload button on the extension card.
 
 `storage` is the only permission the extension asks for. Moving, querying and activating tabs need none, and neither do the keyboard commands.
 
 ## Development
+
+From the repository root:
 
 ```sh
 pnpm install
@@ -77,9 +79,9 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` runs Oxfmt's check mode, Knip, Oxlint and TypeScript in parallel; `pnpm fix` applies safe lint fixes and formats the repository. `pnpm watch` rebuilds on change, and `pnpm package` runs the full gate before zipping `dist/` into a store-ready archive. A `pre-commit` hook runs `pnpm check` and `pnpm test`; `pnpm install` points git at it through the `prepare` script.
+`pnpm check` runs Oxfmt's check mode, Knip, Oxlint and TypeScript in parallel for every package; `pnpm fix` applies safe lint fixes and formats the repository. In `apps/chrome`, `pnpm watch` rebuilds on change, and `pnpm package` runs the full gate before zipping `dist/` into a store-ready archive. The Git hooks run `pnpm check` before each commit and the full gate before each push; `pnpm install` points Git at them through the `prepare` script.
 
-Every long-running command lives in `scripts/` and runs through Node's TypeScript support, so `package.json` only holds the entry points. `scripts/build.mts` bundles `src/background.ts`, `src/action/action.ts` and `src/options/options.ts` with esbuild and copies `manifest.json`, the HTML, the CSS and the icons into `dist/`.
+Every long-running command lives in `scripts/` and runs through Node's TypeScript support, so `package.json` only holds the entry points. `scripts/build.mts` bundles `src/background.ts`, `src/action/action.ts` and `src/options/options.ts` with esbuild through the shared `@staple/tools` package and copies `manifest.json`, the HTML, the CSS and the icons into `dist/`.
 
 `pnpm test` bundles every `src/**/*.test.ts` with esbuild and runs each bundle on Node's test runner with a stub `chrome` global, which is why the parts worth testing (the tab history reducer, the move planner) are pure functions with no Chrome API calls in them.
 

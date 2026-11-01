@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm build)",
+      "Bash(pnpm check)",
+      "Bash(pnpm check:*)",
+      "Bash(pnpm fix)",
+      "Bash(pnpm install)",
+      "Bash(pnpm test)",
+      "Bash(pnpm run build)",
+      "Bash(pnpm run check)",
+      "Bash(pnpm run check:*)",
+      "Bash(pnpm run ci)",
+      "Bash(pnpm run fix)",
+      "Bash(pnpm run test)",
+      "Bash(pnpm --filter staple-chrome run build)",
+      "Bash(pnpm --filter staple-chrome run package)",
+      "Bash(pnpm --filter staple-chrome run test)",
+      "Bash(pnpm --filter staple run build)",
+      "Bash(pnpm --filter staple run package)",
+      "Bash(pnpm --filter staple run test)"
+    ]
+  }
+}

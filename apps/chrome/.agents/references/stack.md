@@ -1,46 +1,45 @@
-# Stack decisions
+# Chrome stack decisions
 
-Why the toolchain looks the way it does, and what would justify changing it. Researched in August 2026 against the npm registry and the projects' own repositories. Read this before proposing a different build tool, test runner or type package; re-research only if a trigger below actually fires.
-
-## Contents
-
-- [Build tooling](#build-tooling): the comparison and the choice
-- [Locked stack](#locked-stack): what is in use and why
-- [Platform baseline](#platform-baseline): what the extension targets
+Why the Chrome toolchain looks the way it does, and what can justify a change. Read this before you propose a different build tool, test runner or type package.
 
 ## Build tooling
 
-Candidates were scored on their own merits first, then re-weighted for this project's constraints: parity with staple-vscode, minimal dependencies, and original Chrome patterns rather than a framework's abstractions.
+The candidates got a generic score first, then a fit score for this project: parity with the VS Code app, few dependencies, and plain Chrome patterns.
 
-| Candidate               | Generic score | Fit       | Notes                                                                                                                                                                                                                                                     |
-| ----------------------- | ------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Custom esbuild scripts  | 6/10          | Chosen    | `scripts/build.mts` and `scripts/test.mts` port almost verbatim from staple-vscode. Smallest toolchain, and a hand-written `manifest.json` is the most Chrome-native pattern there is. The cost is no HMR: rebuild and reload from `chrome://extensions`. |
-| CRXJS Vite plugin 2.7.1 | 8/10          | Runner-up | Plain Vite plus a hand-owned typed manifest, real HMR, 14 dependencies, maintenance revived with a stable v2 in mid-2025.                                                                                                                                 |
-| WXT 0.21.3              | 9/10          | Rejected  | Best maintained and the best testing story, but it is a framework: generated manifest, file conventions, auto imports, 35 CLI dependencies. It would replace the staple-vscode build entirely.                                                            |
-| Extension.js 4.0.30     | 6/10          | Rejected  | Rspack based, installs Vue, Preact and Svelte loaders even for a vanilla TypeScript project.                                                                                                                                                              |
-| Plain Vite 8.2.1        | 7/10          | Rejected  | The HMR client cannot run on `chrome-extension://` pages without CRXJS-style glue, so hand-rolling it buys nothing over esbuild.                                                                                                                          |
-| Plasmo 0.90.5           | 2/10          | Rejected  | Dormant since May 2025: no commit or release in 15 months, 371 open issues.                                                                                                                                                                               |
+| Candidate               | Generic score | Fit       |
+| ----------------------- | ------------- | --------- |
+| Custom esbuild scripts  | 6/10          | Chosen    |
+| CRXJS Vite plugin 2.7.1 | 8/10          | Runner-up |
+| WXT 0.21.3              | 9/10          | Rejected  |
+| Extension.js 4.0.30     | 6/10          | Rejected  |
+| Plain Vite 8.2.1        | 7/10          | Rejected  |
+| Plasmo 0.90.5           | 2/10          | Rejected  |
 
-Switch triggers, the only reasons to revisit:
+- Custom esbuild scripts share `@staple/tools` with the VS Code app, and a hand-written `manifest.json` is the most Chrome-native pattern. The cost is no HMR.
+- CRXJS is plain Vite plus a typed manifest that you own, with real HMR and 14 dependencies. A stable v2 shipped in mid-2025.
+- WXT has the best maintenance and testing, but it is a framework: a generated manifest, file conventions, auto imports and 35 CLI dependencies.
+- Extension.js is based on Rspack, and installs Vue, Preact and Svelte loaders for a vanilla TypeScript project.
+- Plain Vite gains nothing over esbuild: its HMR client cannot run on `chrome-extension://` pages without CRXJS glue.
+- Plasmo had no commit or release for 15 months, and 371 open issues.
 
-- Reload friction becomes a real cost during sustained UI work: move to CRXJS, keeping the manifest hand-written.
-- The extension needs to target Firefox or Safari as well, or grows many entry points such as content scripts and devtools panels: WXT earns its abstraction then.
+Revisit the choice only on one of these triggers:
 
-Neither has fired. Two worker-centric features plus a small static popup and options page do not need a dev server.
+- When reload friction slows sustained UI work, move to CRXJS and keep the hand-written manifest.
+- When the extension must also target Firefox or Safari, or gets many entry points such as content scripts and devtools panels, move to WXT.
 
 ## Locked stack
 
-- **Build**: esbuild `^0.28` driven by `scripts/build.mts` on Node 24's native TypeScript support. ESM output, since the service worker is declared as `"type": "module"`.
-- **Types**: `chrome-types`, Google's package generated daily from Chromium. Their README recommends it over `@types/chrome` for Manifest V3. It is listed in `tsconfig.json` `types` alongside `node`, which the scripts need.
-- **Language**: TypeScript 7 with `strict`, ES2022 target and bundler module resolution, `noEmit` because esbuild does the emitting. If `tsc --noEmit` or oxlint's type-aware rules misbehave with TypeScript 7, pin `^5.9` and note why.
-- **Tests**: `node:test` and `node:assert/strict`, bundled by `scripts/test.mts` with `globalThis.chrome ??= {}` as the entire stub. This is deliberate: an empty stub means anything importing Chrome APIs cannot be unit tested, which forces the testable logic into pure modules.
-- **No polyfill**: Chrome ships a native promise-based `browser` namespace since Chrome 148, and `chrome.*` is already promise-based under Manifest V3. A Chrome-only extension gains nothing from `webextension-polyfill`.
-- **End to end**: none installed. If a smoke test lands, Playwright's `launchPersistentContext` with `--load-extension=dist` is the approach; add the dependency only when the script is actually written.
+- Build: esbuild through `bundle()` from `@staple/tools`, called by `scripts/build.mts`. The output is ESM, because the service worker has `"type": "module"`.
+- Types: `chrome-types`, which Google generates daily from Chromium and recommends over `@types/chrome` for Manifest V3.
+- `tsconfig.json` lists `chrome-types` and `node` in `types`. It extends the root `tsconfig.json` and adds the DOM libs and the `@/*` alias.
+- Tests: `node:test` and `node:assert/strict`, through `test()` from `@staple/tools` with `globals: ['chrome']`.
+- The test stub is `globalThis.chrome ??= {}` and nothing more, so testable logic must go in pure modules.
+- No polyfill: under Manifest V3, `chrome.*` returns promises, and Chrome 148 added a native `browser` namespace.
+- End to end: none. For a smoke test, add Playwright with the first script, and use `launchPersistentContext` with `--load-extension=dist`.
 
 ## Platform baseline
 
-Manifest V3 only. Manifest V2 was removed from Chrome and the store across 2025 and 2026, so there is no fallback path to maintain.
-
-`minimum_chrome_version` is `121`, paired with esbuild's `chrome121` target. 121 is the floor set by `tab.lastAccessed`, and every other API in use is older. Raise both together, and only after checking the `@since` of the API that forces the change.
-
-The service worker constraint shapes the whole design: Chrome terminates it after roughly 30 seconds idle. State is event-sourced into `chrome.storage.session`, and every command recomputes what it needs from live queries rather than trusting anything held in memory.
+- Manifest V3 only. Chrome and the store removed Manifest V2 in 2025 and 2026.
+- `minimum_chrome_version` is `121`, with the esbuild `chrome121` target. `tab.lastAccessed` sets the floor, and all other APIs in use are older.
+- Raise both together, and only after a check of the `@since` of the API that needs it.
+- Chrome stops the service worker after about 30 seconds idle. So the state goes to `chrome.storage.session`, and each command reads live queries.
