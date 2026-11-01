@@ -1,4 +1,0 @@
-allowBuilds:
-  esbuild: true
-minimumReleaseAgeExclude:
-  - chrome-types@0.1.438

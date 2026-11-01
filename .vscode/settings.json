@@ -3,6 +3,5 @@
     "source.fixAll.oxc": "explicit"
   },
   "editor.defaultFormatter": "oxc.oxc-vscode",
-  "editor.formatOnSave": true,
-  "oxc.fmt.configPath": ".oxfmtrc.json"
+  "editor.formatOnSave": true
 }

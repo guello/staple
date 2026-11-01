@@ -1,0 +1,31 @@
+{
+  "name": "@staple",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guello/staple"
+  },
+  "packageManager": "pnpm@12.16.1",
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
+    "build": "pnpm -r run build",
+    "check": "pnpm run \"/^check:/\"",
+    "check:format": "oxfmt --check",
+    "check:knip": "knip",
+    "check:lint": "oxlint",
+    "check:types": "pnpm -r --parallel run check:types",
+    "fix": "oxlint --fix && oxfmt",
+    "test": "pnpm -r run test",
+    "ci": "pnpm run check && pnpm run test"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "knip": "^6.32.0",
+    "oxfmt": "^0.62.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "typescript": "catalog:"
+  }
+}

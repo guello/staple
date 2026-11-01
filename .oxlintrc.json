@@ -10,10 +10,9 @@
     "suspicious": "error"
   },
   "env": {
-    "es2022": true,
-    "node": true
+    "es2022": true
   },
-  "ignorePatterns": ["dist"],
+  "ignorePatterns": ["**/dist"],
   "options": {
     "denyWarnings": true,
     "reportUnusedDisableDirectives": "error",
@@ -36,7 +35,12 @@
     "eslint/max-statements": ["error", 100],
     "eslint/no-await-in-loop": "off",
     "eslint/no-cond-assign": "error",
-    "eslint/no-console": ["warn", { "allow": ["info", "warn", "error"] }],
+    "eslint/no-console": [
+      "warn",
+      {
+        "allow": ["info", "warn", "error"]
+      }
+    ],
     "eslint/no-const-assign": "error",
     "eslint/no-continue": "off",
     "eslint/no-debugger": "error",
@@ -84,6 +88,7 @@
     "eslint/no-void": "off",
     "eslint/no-warning-comments": "off",
     "eslint/no-with": "error",
+    "eslint/one-var": "off",
     "eslint/operator-assignment": "error",
     "eslint/prefer-const": "error",
     "eslint/prefer-destructuring": "off",
@@ -94,7 +99,12 @@
     "eslint/require-await": "error",
     "eslint/require-unicode-regexp": "off",
     "eslint/sort-keys": "off",
-    "eslint/sort-imports": ["error", { "ignoreDeclarationSort": true }],
+    "eslint/sort-imports": [
+      "error",
+      {
+        "ignoreDeclarationSort": true
+      }
+    ],
     "eslint/symbol-description": "warn",
     "eslint/use-isnan": "error",
     "eslint/valid-typeof": "error",
@@ -111,7 +121,7 @@
     "import/no-named-export": "off",
     "import/no-namespace": "off",
     "import/no-nodejs-modules": "off",
-    "import/no-relative-parent-imports": "error",
+    "import/no-relative-parent-imports": "off",
     "import/no-self-import": "error",
     "import/no-unassigned-import": "off",
     "import/no-webpack-loader-syntax": "error",
@@ -124,7 +134,12 @@
     "promise/no-nesting": "warn",
     "promise/prefer-await-to-callbacks": "off",
     "promise/prefer-await-to-then": "error",
-    "typescript/array-type": ["error", { "default": "array" }],
+    "typescript/array-type": [
+      "error",
+      {
+        "default": "array"
+      }
+    ],
     "typescript/ban-ts-comment": [
       "error",
       {
@@ -135,7 +150,13 @@
       }
     ],
     "typescript/consistent-type-definitions": ["error", "interface"],
-    "typescript/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports", "prefer": "type-imports" }],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "fixStyle": "inline-type-imports",
+        "prefer": "type-imports"
+      }
+    ],
     "typescript/no-empty-interface": "warn",
     "typescript/no-explicit-any": "warn",
     "typescript/no-extra-non-null-assertion": "error",
@@ -164,7 +185,12 @@
     "unicorn/error-message": "error",
     "unicorn/consistent-function-scoping": "off",
     "unicorn/escape-case": "off",
-    "unicorn/filename-case": ["error", { "case": "kebabCase" }],
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+      }
+    ],
     "unicorn/new-for-builtins": "error",
     "unicorn/no-array-sort": "off",
     "unicorn/no-array-for-each": "error",
@@ -195,6 +221,31 @@
     "unicorn/throw-new-error": "error"
   },
   "overrides": [
+    {
+      "files": ["apps/chrome/src/**/*.ts"],
+      "env": {
+        "browser": true,
+        "webextensions": true
+      }
+    },
+    {
+      "files": [
+        "apps/chrome/scripts/**/*.mts",
+        "apps/vscode/**/*.ts",
+        "apps/vscode/**/*.mts",
+        "packages/**/*.mts",
+        "scripts/**/*.mts"
+      ],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": ["apps/vscode/**/*.ts", "apps/vscode/**/*.mts"],
+      "rules": {
+        "import/no-relative-parent-imports": "error"
+      }
+    },
     {
       "files": ["**/*.test.ts"],
       "rules": {

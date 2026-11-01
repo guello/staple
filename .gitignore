@@ -1,0 +1,8 @@
+.agents/plans/
+**/.claude/settings.local.json
+**/.claude/worktrees/
+dist/
+node_modules/
+.DS_Store
+*.vsix
+*.zip

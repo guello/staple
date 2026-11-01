@@ -1,6 +1,6 @@
 import { cp, rm } from 'node:fs/promises'
 
-import { type BuildOptions, type Plugin, build, context } from 'esbuild'
+import { type Plugin, bundle, watch } from '@staple/tools'
 
 const staticFiles: [string, string][] = [
   ['manifest.json', 'dist/manifest.json'],
@@ -21,22 +21,13 @@ const copyStatic: Plugin = {
   },
 }
 
-const watch = process.argv.includes('--watch')
+await rm('dist', { recursive: true, force: true })
 
-const options: BuildOptions = {
+await bundle({
   entryPoints: ['src/background.ts', 'src/action/action.ts', 'src/options/options.ts'],
-  outdir: 'dist',
-  outbase: 'src',
-  bundle: true,
   format: 'esm',
   platform: 'browser',
   target: 'chrome121',
-  minify: !watch,
   sourcemap: watch,
-  logLevel: 'info',
   plugins: [copyStatic],
-}
-
-await rm('dist', { recursive: true, force: true })
-
-await (watch ? (await context(options)).watch() : build(options))
+})

@@ -7,34 +7,23 @@
     "Other"
   ],
   "license": "MIT",
+  "private": true,
   "publisher": "guello",
   "repository": {
-    "type": "https",
-    "url": "https://github.com/guello/staple-vscode"
+    "type": "git",
+    "url": "https://github.com/guello/staple",
+    "directory": "apps/vscode"
   },
   "icon": "./media/icon.png",
   "main": "./dist/extension.js",
-  "packageManager": "pnpm@11.17.0",
-  "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ]
-  },
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
     "build": "node scripts/build.mts",
     "watch": "node scripts/build.mts --watch",
     "generate:ghostty": "node scripts/generate-ghostty-reference.mts",
-    "check": "pnpm run --parallel \"/^check:/\"",
-    "check:format": "oxfmt --check",
-    "check:knip": "knip",
-    "check:lint": "oxlint",
     "check:types": "tsc --noEmit",
-    "fix": "oxlint --fix && oxfmt",
     "test": "node scripts/test.mts",
-    "ci": "pnpm run check && pnpm run test",
     "deploy": "pnpm run package && code --install-extension staple-vscode-$npm_package_version.vsix",
-    "package": "pnpm run ci && vsce package --no-dependencies",
+    "package": "pnpm -w run ci && vsce package --no-dependencies --baseContentUrl https://github.com/guello/staple/blob/HEAD/apps/vscode --baseImagesUrl https://github.com/guello/staple/raw/HEAD/apps/vscode",
     "vscode:prepublish": "pnpm run build"
   },
   "dependencies": {
@@ -42,19 +31,13 @@
     "vscode-languageclient": "^10.1.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.1",
-    "@commitlint/config-conventional": "^21.2.0",
+    "@staple/tools": "workspace:*",
     "@types/node": "^26.2.0",
     "@types/vscode": "~1.91.0",
     "@vscode/vsce": "^3.9.2",
-    "esbuild": "^0.28.1",
     "generate-github-markdown-css": "^6.6.0",
-    "knip": "^6.32.0",
-    "oxfmt": "^0.62.0",
-    "oxlint": "^1.77.0",
-    "oxlint-tsgolint": "^7.0.2001",
     "postcss": "^8.5.26",
-    "typescript": "^7.0.2"
+    "typescript": "catalog:"
   },
   "engines": {
     "vscode": "^1.91.0"

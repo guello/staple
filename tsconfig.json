@@ -1,0 +1,13 @@
+{
+  "include": ["scripts"],
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2022"
+  }
+}
