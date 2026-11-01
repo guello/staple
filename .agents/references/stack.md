@@ -33,6 +33,14 @@ Read this before you propose a task runner, a new shared package or a different 
 - pnpm enforces a minimum release age, so `pnpm update --latest` stops one version short of a package from the last day.
 - Never force a newer version with `pnpm add <pkg>@<version>`. pnpm then writes a permanent `minimumReleaseAgeExclude` entry.
 
+## CI
+
+- `.github/workflows/ci.yml` runs on each push to `main` and on each pull request.
+- The `gates` job runs `pnpm run check` on the whole workspace. On a pull request, it also runs commitlint on each commit.
+- The `app` job runs `test` and `build` only for the apps that the change touches. A change outside `apps/` runs every app.
+- The `ci` job fails when any other job fails. Make it the only required check, so that a skipped app job does not block a merge.
+- The jobs read the Node version from `.node-version` and the pnpm version from `packageManager`. Do not write versions into the workflow.
+
 ## Shared code
 
 - `packages/tools` (`@staple/tools`) holds the build code that two or more apps use: `bundle()` and `test()`.

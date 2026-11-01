@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Affected apps
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.affected.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: affected
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          all=$(find apps -mindepth 1 -maxdepth 1 -type d | cut -d/ -f2 | sort)
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            apps=$all
+          else
+            diff=$(git diff --no-renames --name-only "$BASE" HEAD)
+            if [ -n "$(echo "$diff" | grep -v '^apps/')" ]; then
+              apps=$all
+            else
+              apps=$(comm -12 <(echo "$all") <(echo "$diff" | cut -d/ -f2 | sort -u))
+            fi
+          fi
+          json=$(printf '%s\n' $apps | jq -Rnc '[inputs | select(length > 0)]')
+          echo "apps=$json" >> "$GITHUB_OUTPUT"
+          echo "Affected apps: $json"
+
+  gates:
+    name: Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: pnpm exec commitlint --from "$BASE" --to "$HEAD" --verbose
+
+  app:
+    name: App (${{ matrix.app }})
+    needs: changes
+    if: needs.changes.outputs.apps != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - run: pnpm install --frozen-lockfile
+      - env:
+          APP: ${{ matrix.app }}
+        run: |
+          pnpm --filter "./apps/$APP" run test
+          pnpm --filter "./apps/$APP" run build
+
+  ci:
+    name: ci
+    needs: [changes, gates, app]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            case $result in
+              success | skipped) ;;
+              *) exit 1 ;;
+            esac
+          done
