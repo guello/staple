@@ -1,9 +1,3 @@
----
-description: 'Use when editing the TOML feature: the client state machine, the lazy client load, shutdown, and the Taplo settings.'
-paths:
-  - 'src/features/toml/**'
----
-
 # TOML
 
 The process model is in `.agents/references/architecture.md`. Do not remove a guard below without a reproduction of its case.

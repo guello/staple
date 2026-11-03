@@ -1,9 +1,3 @@
----
-description: 'Use when editing a VS Code feature in src/features: the feature contract, and the guards in the single-file features.'
-paths:
-  - 'src/features/**'
----
-
 # Feature invariants
 
 Each guard below fixes a defect that occurred, several in the extensions that these features replace. Do not remove a guard without a reproduction of its case.

@@ -46,8 +46,8 @@ CI runs the same gates on each push to `main` and on each pull request. All jobs
 2. Extend the root `tsconfig.json` from its own `tsconfig.json`, and set `include` there.
 3. Add its workspace to `knip.json`, and an override to `.oxlintrc.json` for its environment.
 4. Add `<name>` to `scope-enum` in `.commitlintrc.json`.
-5. Add its `AGENTS.md`, a `CLAUDE.md` that holds `@AGENTS.md`, and a row in the layout table above.
-6. Put its rules in `apps/<name>/.agents/rules/`, with globs relative to the app, and link `apps/<name>/.claude/rules` to `../.agents/rules`.
+5. Add its `AGENTS.md` and a row in the layout table above. Do not add a `CLAUDE.md`: Claude Code reads `AGENTS.md`.
+6. Put its rules in `apps/<name>/.agents/rules/` as plain Markdown. Route each one from a row of the app `AGENTS.md` table, with a path relative to the app.
 
 ## Conventions
 
@@ -59,11 +59,11 @@ CI runs the same gates on each push to `main` and on each pull request. All jobs
 
 ## Read next
 
-Each app keeps its rules and references in `apps/<app>/.agents/`. Claude Code loads each rule on its path glob through the `apps/<app>/.claude/rules` link. Other agents read the rules from the app `AGENTS.md` files.
+Each app keeps its rules and references in `apps/<app>/.agents/`, and the table in the app `AGENTS.md` routes each one. Before the work, read the file of each row below that applies.
 
-| File                            | When                                                                     |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| `apps/chrome/AGENTS.md`         | Any work in `apps/chrome`.                                               |
-| `apps/vscode/AGENTS.md`         | Any work in `apps/vscode`.                                               |
-| `.agents/references/stack.md`   | Changing the workspace, the gates, the dependencies or `packages/tools`. |
-| `.agents/references/release.md` | Packaging, tagging and publishing an app.                                |
+| Work                                                                  | Read                            |
+| --------------------------------------------------------------------- | ------------------------------- |
+| Any work in `apps/chrome`                                             | `apps/chrome/AGENTS.md`         |
+| Any work in `apps/vscode`                                             | `apps/vscode/AGENTS.md`         |
+| Change the workspace, the gates, the dependencies or `packages/tools` | `.agents/references/stack.md`   |
+| Package, tag or publish an app                                        | `.agents/references/release.md` |

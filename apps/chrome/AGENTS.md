@@ -29,12 +29,14 @@ Run these in `apps/chrome`, or from the root with `pnpm --filter staple-chrome r
 
 ## Read next
 
-Paths below are relative to `apps/chrome`. Claude Code loads each rule on its path glob through the `.claude/rules` link. Other agents must read the matching file before the edit.
+Paths below are relative to `apps/chrome`. Before the edit, read the file of each row that applies.
 
-- When you edit `src/features/`: `.agents/rules/features.md`. It lists deliberate guards that must stay.
-- When you edit `src/ui/`, `src/action/` or `src/options/`: `.agents/rules/ui.md`.
-- When you edit `manifest.json`: `.agents/rules/manifest.md`.
-- When you change the layout, the message flow or the shared modules: `.agents/references/architecture.md`.
-- When you change the build, the test runner, the types or the platform baseline: `.agents/references/stack.md`.
-- When you add a feature or a command, or check behavior in a real browser: `.agents/references/workflows.md`.
-- When you package, tag or publish: the root `.agents/references/release.md`.
+| Work                                                                  | Read                                                                    |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Edit `src/features/`                                                  | `.agents/rules/features.md`. It lists deliberate guards that must stay. |
+| Edit `src/ui/`, `src/action/` or `src/options/`                       | `.agents/rules/ui.md`                                                   |
+| Edit `manifest.json`                                                  | `.agents/rules/manifest.md`                                             |
+| Change the layout, the message flow or the shared modules             | `.agents/references/architecture.md`                                    |
+| Change the build, the test runner, the types or the platform baseline | `.agents/references/stack.md`                                           |
+| Add a feature or a command, or check behavior in a real browser       | `.agents/references/workflows.md`                                       |
+| Package, tag or publish                                               | The root `.agents/references/release.md`                                |

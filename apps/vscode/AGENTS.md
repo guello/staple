@@ -34,19 +34,16 @@ Run these in `apps/vscode`, or from the root with `pnpm --filter staple run <scr
 
 ## Read next
 
-Paths below are relative to `apps/vscode`. Claude Code loads each rule on its path glob through the `.claude/rules` link. Other agents must read the matching file before the edit.
+Paths below are relative to `apps/vscode`. Before the edit, read the file of each row that applies.
 
-### Rules
-
-- When you edit `src/features/`: `.agents/rules/features.md`. It lists deliberate guards that must stay.
-- When you edit `src/features/ghostty-syntax/` or `languages/ghostty/`: `.agents/rules/ghostty.md`.
-- When you edit `src/features/toml/`: `.agents/rules/toml.md`.
-- When you edit the markdown feature, its generator or `media/markdown/`: `.agents/rules/markdown-preview.md`.
-- When you edit `package.json`: `.agents/rules/contributes.md`. It lists what must agree, and what nothing checks.
-
-### References
-
-- When you change `src/extension.ts`, the feature contract, the TOML process model or the build entry points: `.agents/references/architecture.md`.
-- When you change the build, the test runner, the types or the editor baseline: `.agents/references/stack.md`.
-- When you add a feature or a command, or check behavior in a real editor: `.agents/references/workflows.md`.
-- When you package, tag or publish: the root `.agents/references/release.md`.
+| Work                                                                                                  | Read                                                                               |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Edit `src/features/`                                                                                  | `.agents/rules/features.md`. It lists deliberate guards that must stay.            |
+| Edit `src/features/ghostty-syntax/`, `languages/ghostty/` or `scripts/generate-ghostty-reference.mts` | `.agents/rules/ghostty.md`                                                         |
+| Edit `src/features/toml/`                                                                             | `.agents/rules/toml.md`                                                            |
+| Edit the markdown feature, its generator or `media/markdown/`                                         | `.agents/rules/markdown-preview.md`                                                |
+| Edit `package.json`                                                                                   | `.agents/rules/contributes.md`. It lists what must agree, and what nothing checks. |
+| Change `src/extension.ts`, the feature contract, the TOML process model or the build entry points     | `.agents/references/architecture.md`                                               |
+| Change the build, the test runner, the types or the editor baseline                                   | `.agents/references/stack.md`                                                      |
+| Add a feature or a command, or check behavior in a real editor                                        | `.agents/references/workflows.md`                                                  |
+| Package, tag or publish                                                                               | The root `.agents/references/release.md`                                           |

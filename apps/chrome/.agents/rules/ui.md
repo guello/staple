@@ -1,11 +1,3 @@
----
-description: 'Use when editing src/ui, src/action or src/options: GM3 tokens, metrics, dark mode, instant paint, DOM safety, tab list anatomy.'
-paths:
-  - 'src/ui/**'
-  - 'src/action/**'
-  - 'src/options/**'
----
-
 # Chrome-native UI
 
 The popup and the options page must look like a part of Chrome, not like a web page.

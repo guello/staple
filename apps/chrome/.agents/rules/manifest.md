@@ -1,9 +1,3 @@
----
-description: 'Use when editing manifest.json: the shortcut budget, the command rules of Chrome, the permission policy, and the paired fields.'
-paths:
-  - 'manifest.json'
----
-
 # Manifest
 
 `apps/chrome/manifest.json` is the source of truth. `scripts/build.mts` copies it into `dist/` without changes.

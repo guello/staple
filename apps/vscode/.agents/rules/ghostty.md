@@ -1,11 +1,3 @@
----
-description: 'Use when editing Ghostty Syntax: the settings write policy, the color provider, and the hover reference parser.'
-paths:
-  - 'src/features/ghostty-syntax/**'
-  - 'languages/ghostty/**'
-  - 'scripts/generate-ghostty-reference.mts'
----
-
 # Ghostty Syntax
 
 Each guard below fixes a defect that occurred. Do not remove a guard without a reproduction of its case.

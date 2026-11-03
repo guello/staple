@@ -1,11 +1,3 @@
----
-description: 'Use when editing the markdown preview or its generator: the generated stylesheets, CSS theme selection, markdown-it.'
-paths:
-  - 'src/features/markdown/**'
-  - 'media/markdown/**'
-  - 'scripts/generate-github-markdown.mts'
----
-
 # Markdown preview
 
 The preview has three parts that must agree:

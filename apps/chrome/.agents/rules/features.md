@@ -1,9 +1,3 @@
----
-description: 'Use when editing a Chrome feature in src/features: the service worker rules, the guards in each feature, and the manual checks.'
-paths:
-  - 'src/features/**'
----
-
 # Feature invariants
 
 Each feature replaces a popular extension, and each guard below fixes a defect from its public issues.

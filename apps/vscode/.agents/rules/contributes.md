@@ -1,9 +1,3 @@
----
-description: 'Use when editing package.json: the contributions that must agree with the source, the settings scope policy, and packaging.'
-paths:
-  - 'package.json'
----
-
 # Manifest and contributions
 
 `package.json` is the npm manifest and the VS Code extension manifest. Its `contributes` block is the whole declarative surface of the extension.
